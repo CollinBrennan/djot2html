@@ -26,8 +26,9 @@ pub fn advance(lexer: Lexer) -> Lexer {
         "^" -> token.Token(token.Caret, grapheme)
         "=" -> token.Token(token.Equals, grapheme)
         "+" -> token.Token(token.Plus, grapheme)
-        "-" -> token.Token(token.Hyphen, grapheme)
-        _ -> token.Token(token.Illegal, grapheme)
+        "-" -> token.Token(token.Dash, grapheme)
+        "\r\n" -> token.Token(token.EOF, grapheme)
+        _ -> token.Token(token.Text, grapheme)
       })
   }
 

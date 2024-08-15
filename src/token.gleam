@@ -1,3 +1,7 @@
+pub type Token {
+  Token(token_type: TokenType, literal: String)
+}
+
 pub type TokenType {
   LeftCurly
   RightCurly
@@ -8,10 +12,7 @@ pub type TokenType {
   Caret
   Equals
   Plus
-  Hyphen
-  Illegal
-}
-
-pub type Token {
-  Token(token_type: TokenType, literal: String)
+  Dash
+  EOF
+  Text
 }

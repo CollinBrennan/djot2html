@@ -1,60 +1,41 @@
+import file
+import gleam/io
 import gleam/option.{Some}
-import gleam/string
-import gleeunit
 import gleeunit/should
 import lexer
 import token
 
-pub fn main() {
-  gleeunit.main()
+pub fn advance_test() {
+  let tests = [
+    token.Token(token.LeftCurly, "{"),
+    token.Token(token.RightCurly, "}"),
+    token.Token(token.Underscore, "_"),
+    token.Token(token.Star, "*"),
+    token.Token(token.Tick, "`"),
+    token.Token(token.Tilde, "~"),
+    token.Token(token.Caret, "^"),
+    token.Token(token.Equals, "="),
+    token.Token(token.Plus, "+"),
+    token.Token(token.Dash, "-"),
+    token.Token(token.EOF, "\r\n"),
+  ]
+
+  case file.read("./test/test.md") {
+    Ok(text) -> assert_tokens_equal(lexer.new(text), tests)
+    Error(error) -> io.println_error(error)
+  }
 }
 
-pub fn lexer_test() {
-  let input = "{}_*`~^=+-"
-  let l = lexer.new(input)
-  let l1 = lexer.advance(l)
-  let l2 = lexer.advance(l1)
-  let l3 = lexer.advance(l2)
-  let l4 = lexer.advance(l3)
-  let l5 = lexer.advance(l4)
-
-  should.equal(
-    l1,
-    lexer.Lexer(
-      string.to_graphemes("}_*`~^=+-"),
-      Some(token.Token(token.LeftCurly, "{")),
-    ),
-  )
-
-  should.equal(
-    l2,
-    lexer.Lexer(
-      string.to_graphemes("_*`~^=+-"),
-      Some(token.Token(token.RightCurly, "}")),
-    ),
-  )
-
-  should.equal(
-    l3,
-    lexer.Lexer(
-      string.to_graphemes("*`~^=+-"),
-      Some(token.Token(token.Underscore, "_")),
-    ),
-  )
-
-  should.equal(
-    l4,
-    lexer.Lexer(
-      string.to_graphemes("`~^=+-"),
-      Some(token.Token(token.Star, "*")),
-    ),
-  )
-
-  should.equal(
-    l5,
-    lexer.Lexer(
-      string.to_graphemes("~^=+-"),
-      Some(token.Token(token.Tick, "`")),
-    ),
-  )
+fn assert_tokens_equal(l: lexer.Lexer, tests: List(token.Token)) {
+  let advanced = lexer.advance(l)
+  case tests {
+    [] -> Nil
+    [first] -> {
+      should.equal(advanced.current, Some(first))
+    }
+    [first, ..rest] -> {
+      should.equal(advanced.current, Some(first))
+      assert_tokens_equal(advanced, rest)
+    }
+  }
 }
