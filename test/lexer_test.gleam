@@ -7,17 +7,27 @@ import token
 
 pub fn advance_test() {
   let tests = [
-    token.Token(token.LeftCurly, "{"),
-    token.Token(token.RightCurly, "}"),
-    token.Token(token.Underscore, "_"),
-    token.Token(token.Star, "*"),
-    token.Token(token.Tick, "`"),
-    token.Token(token.Tilde, "~"),
-    token.Token(token.Caret, "^"),
-    token.Token(token.Equals, "="),
-    token.Token(token.Plus, "+"),
-    token.Token(token.Dash, "-"),
-    token.Token(token.EOF, "\r\n"),
+    token.LeftCurly,
+    token.RightCurly,
+    token.Underscore,
+    token.Star,
+    token.Tick,
+    token.Tilde,
+    token.Caret,
+    token.Equals,
+    token.Plus,
+    token.Dash,
+    token.NewLine,
+    token.Text("some other text"),
+    token.NewLine,
+    token.Text("😂 🥺 ♥️"),
+    token.NewLine,
+    token.Text("la"),
+    token.Plus,
+    token.Text("la"),
+    token.Dash,
+    token.Text("la"),
+    token.NewLine,
   ]
 
   case file.read("./test/test.md") {

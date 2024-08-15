@@ -1,8 +1,4 @@
 pub type Token {
-  Token(token_type: TokenType, literal: String)
-}
-
-pub type TokenType {
   LeftCurly
   RightCurly
   Underscore
@@ -13,6 +9,6 @@ pub type TokenType {
   Equals
   Plus
   Dash
-  EOF
-  Text
+  NewLine
+  Text(String)
 }
