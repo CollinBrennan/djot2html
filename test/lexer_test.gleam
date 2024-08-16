@@ -30,7 +30,7 @@ pub fn advance_test() {
     token.NewLine,
   ]
 
-  case file.read("./test/test.md") {
+  case file.read("./test/test.djot") {
     Ok(text) -> assert_tokens_equal(lexer.new(text), tests)
     Error(error) -> io.println_error(error)
   }
@@ -40,9 +40,6 @@ fn assert_tokens_equal(l: lexer.Lexer, tests: List(token.Token)) {
   let advanced = lexer.advance(l)
   case tests {
     [] -> Nil
-    [first] -> {
-      should.equal(advanced.current, Some(first))
-    }
     [first, ..rest] -> {
       should.equal(advanced.current, Some(first))
       assert_tokens_equal(advanced, rest)
