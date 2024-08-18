@@ -5,28 +5,15 @@ import gleeunit/should
 import lexer
 import token
 
-pub fn advance_test() {
+pub fn lexer_test() {
   let tests = [
-    token.LeftCurly,
-    token.RightCurly,
     token.Underscore,
+    token.Text("italic"),
+    token.Underscore,
+    token.Text(" "),
     token.Star,
-    token.Tick,
-    token.Tilde,
-    token.Caret,
-    token.Equals,
-    token.Plus,
-    token.Dash,
-    token.NewLine,
-    token.Text("some other text"),
-    token.NewLine,
-    token.Text("😂 🥺 ♥️"),
-    token.NewLine,
-    token.Text("la"),
-    token.Plus,
-    token.Text("la"),
-    token.Dash,
-    token.Text("la"),
+    token.Text("bold"),
+    token.Star,
     token.NewLine,
   ]
 
@@ -37,12 +24,11 @@ pub fn advance_test() {
 }
 
 fn assert_tokens_equal(l: lexer.Lexer, tests: List(token.Token)) {
-  let advanced = lexer.advance(l)
   case tests {
     [] -> Nil
     [first, ..rest] -> {
-      should.equal(advanced.current, Some(first))
-      assert_tokens_equal(advanced, rest)
+      should.equal(l.current, Some(first))
+      assert_tokens_equal(lexer.advance(l), rest)
     }
   }
 }

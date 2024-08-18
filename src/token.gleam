@@ -9,6 +9,7 @@ pub type Token {
   Equals
   Plus
   Dash
+  Hash
   NewLine
   Text(String)
 }
