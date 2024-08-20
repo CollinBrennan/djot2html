@@ -15,6 +15,9 @@ pub type Inline {
   Text(String)
   Emphasis(List(Inline))
   Strong(List(Inline))
+  Code(List(Inline))
+  Sub(List(Inline))
+  Super(List(Inline))
 }
 
 pub type Graphemes =
@@ -34,20 +37,16 @@ pub fn parse(input: String) -> Document {
 fn do_parse(input: Graphemes, accum: List(Section)) -> List(Section) {
   case input {
     [] -> list.reverse(accum)
-    _ -> {
-      let #(rest, section) = parse_section(input)
+    [first, ..] -> {
+      let #(rest, section) = parse_section(input, first)
       do_parse(rest, [section, ..accum])
     }
   }
 }
 
-fn parse_section(input: Graphemes) -> #(Graphemes, Section) {
-  case input {
-    [] -> panic as "parse_section input was empty"
-    [first, ..] ->
-      case first {
-        _ -> parse_paragraph(input)
-      }
+fn parse_section(input: Graphemes, grapheme: String) -> #(Graphemes, Section) {
+  case grapheme {
+    _ -> parse_paragraph(input)
   }
 }
 
@@ -73,11 +72,32 @@ fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline) {
     [first, ..rest] ->
       case first {
         "_" ->
-          case parse_emphasis(rest, []) {
+          case parse_style(rest, [], "_") {
             None -> parse_inline(rest, text <> "_")
             Some(#(rest, inner)) -> #(
               rest,
               Emphasis(do_parse_paragraph(inner, [])),
+            )
+          }
+        "*" ->
+          case parse_style(rest, [], "*") {
+            None -> parse_inline(rest, text <> "*")
+            Some(#(rest, inner)) -> #(
+              rest,
+              Strong(do_parse_paragraph(inner, [])),
+            )
+          }
+        "~" ->
+          case parse_style(rest, [], "~") {
+            None -> parse_inline(rest, text <> "~")
+            Some(#(rest, inner)) -> #(rest, Sub(do_parse_paragraph(inner, [])))
+          }
+        "^" ->
+          case parse_style(rest, [], "^") {
+            None -> parse_inline(rest, text <> "^")
+            Some(#(rest, inner)) -> #(
+              rest,
+              Super(do_parse_paragraph(inner, [])),
             )
           }
         _ -> parse_inline(rest, text <> first)
@@ -85,16 +105,17 @@ fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline) {
   }
 }
 
-fn parse_emphasis(
+fn parse_style(
   input: Graphemes,
   accum: Graphemes,
+  terminator: String,
 ) -> Option(#(Graphemes, List(String))) {
   case input {
     [] -> None
     [first, ..rest] ->
       case first {
-        "_" -> Some(#(rest, list.reverse(accum)))
-        _ -> parse_emphasis(rest, [first, ..accum])
+        _ if first == terminator -> Some(#(rest, list.reverse(accum)))
+        _ -> parse_style(rest, [first, ..accum], terminator)
       }
   }
 }

@@ -8,7 +8,15 @@ pub fn parser_test() {
     parser.Document([
       parser.Paragraph([
         parser.Emphasis([parser.Text("italic")]),
-        parser.Text(" other text"),
+        parser.Strong([parser.Text("bold")]),
+        parser.Sub([parser.Text("sub")]),
+        parser.Super([parser.Text("super")]),
+      ]),
+      parser.Paragraph([
+        parser.Emphasis([parser.Text("ita lic")]),
+        parser.Strong([parser.Text("bo ld")]),
+        parser.Sub([parser.Text("su b")]),
+        parser.Super([parser.Text("sup er")]),
       ]),
     ])
 
