@@ -1,7 +1,6 @@
 import gleam/list
-import gleam/option.{None, Some}
-import lexer
-import token
+import gleam/option.{type Option, None, Some}
+import gleam/string
 
 pub type Document {
   Document(List(Section))
@@ -14,125 +13,112 @@ pub type Section {
 
 pub type Inline {
   Text(String)
-  Emphasis(Inner)
-  Strong(Inner)
-  Code(Inner)
-  Sub(Inner)
-  Super(Inner)
-  Highlight(Inner)
-  Underline(Inner)
-  Strike(Inner)
-  Regular(Inner)
+  Emphasis(List(Inline))
+  Strong(List(Inline))
 }
 
-pub type Inner =
-  List(Inline)
+pub type Graphemes =
+  List(String)
 
-pub fn parse(l: lexer.Lexer) -> Document {
-  let advanced = lexer.advance(l)
-  case advanced.current {
-    None -> Document([])
-    Some(_) -> {
-      let #(_, sections) = do_parse(l, [])
+pub fn parse(input: String) -> Document {
+  let input = string.replace(input, "\r\n", "\n") |> string.to_graphemes()
+  case input {
+    [] -> Document([])
+    _ -> {
+      let sections = do_parse(input, [])
       Document(sections)
     }
   }
 }
 
-fn do_parse(
-  l: lexer.Lexer,
-  accum: List(Section),
-) -> #(lexer.Lexer, List(Section)) {
-  case l.current {
-    None -> #(l, list.reverse(accum))
-    Some(_) -> {
-      let #(new_lexer, section) = parse_section(l)
-      do_parse(new_lexer, [section, ..accum])
+fn do_parse(input: Graphemes, accum: List(Section)) -> List(Section) {
+  case input {
+    [] -> list.reverse(accum)
+    _ -> {
+      let #(rest, section) = parse_section(input)
+      do_parse(rest, [section, ..accum])
     }
   }
 }
 
-fn parse_section(l: lexer.Lexer) -> #(lexer.Lexer, Section) {
-  case l.current {
-    None -> panic as "parse_section found no tokens"
-    Some(_) -> parse_paragraph(l)
+fn parse_section(input: Graphemes) -> #(Graphemes, Section) {
+  case input {
+    [] -> panic as "parse_section input was empty"
+    [first, ..] ->
+      case first {
+        _ -> parse_paragraph(input)
+      }
   }
 }
 
-fn parse_paragraph(l: lexer.Lexer) -> #(lexer.Lexer, Section) {
-  let #(new_lexer, inlines) = do_parse_paragraph(l, [])
-  #(new_lexer, Paragraph(inlines))
+fn parse_paragraph(input: Graphemes) -> #(Graphemes, Section) {
+  let #(rest, paragraph_graphemes) = get_paragraph_graphemes(input)
+  let inlines = do_parse_paragraph(paragraph_graphemes, [])
+  #(rest, Paragraph(inlines))
 }
 
-fn do_parse_paragraph(
-  l: lexer.Lexer,
-  accum: List(Inline),
-) -> #(lexer.Lexer, List(Inline)) {
-  case l.current {
-    None -> #(l, list.reverse(accum))
-    Some(_) -> {
-      let #(new_lexer, inline) = parse_inline(l, "")
-      do_parse_paragraph(new_lexer, [inline, ..accum])
+fn do_parse_paragraph(input: Graphemes, accum: List(Inline)) -> List(Inline) {
+  case input {
+    [] -> list.reverse(accum)
+    _ -> {
+      let #(rest, inline) = parse_inline(input, "")
+      do_parse_paragraph(rest, [inline, ..accum])
     }
   }
 }
 
-fn parse_inline(l: lexer.Lexer, text: String) -> #(lexer.Lexer, Inline) {
-  let advanced = lexer.advance(l)
-  case l.current {
-    None -> #(l, Text(text))
-    Some(t) ->
-      case t {
-        token.NewLine -> #(advanced, Text(text))
-        token.Underscore ->
-          case inline_terminates(advanced, token.Underscore) {
-            True -> parse_inline(advanced, text <> "_")
-            False -> {
-              let #(inner, new_lexer) = lexer.split(advanced, token.Underscore)
-              let #(_, inlines) = do_parse_paragraph(inner, [])
-              #(new_lexer, Emphasis(inlines))
-            }
+fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline) {
+  case input {
+    [] -> #([], Text(text))
+    [first, ..rest] ->
+      case first {
+        "_" ->
+          case parse_emphasis(rest, []) {
+            None -> parse_inline(rest, text <> "_")
+            Some(#(rest, inner)) -> #(
+              rest,
+              Emphasis(do_parse_paragraph(inner, [])),
+            )
           }
-        token.Star ->
-          case inline_terminates(advanced, token.Star) {
-            True -> parse_inline(advanced, text <> "*")
-            False -> {
-              let #(inner, new_lexer) = lexer.split(advanced, token.Star)
-              let #(_, inlines) = do_parse_paragraph(inner, [])
-              #(new_lexer, Strong(inlines))
-            }
-          }
-        token.Tilde ->
-          case inline_terminates(advanced, token.Tilde) {
-            True -> parse_inline(advanced, text <> "~")
-            False -> {
-              let #(inner, new_lexer) = lexer.split(advanced, token.Tilde)
-              let #(_, inlines) = do_parse_paragraph(inner, [])
-              #(new_lexer, Sub(inlines))
-            }
-          }
-        token.Text(inner) -> parse_inline(advanced, text <> inner)
-        _ -> panic as "Token not handled"
+        _ -> parse_inline(rest, text <> first)
       }
   }
 }
 
-fn inline_terminates(l: lexer.Lexer, on terminator: token.Token) -> Bool {
-  !at_section_end(l)
-  && case l.current {
-    None -> False
-    Some(t) ->
-      case t == terminator {
-        True -> True
-        False -> inline_terminates(lexer.advance(l), terminator)
+fn parse_emphasis(
+  input: Graphemes,
+  accum: Graphemes,
+) -> Option(#(Graphemes, List(String))) {
+  case input {
+    [] -> None
+    [first, ..rest] ->
+      case first {
+        "_" -> Some(#(rest, list.reverse(accum)))
+        _ -> parse_emphasis(rest, [first, ..accum])
       }
   }
 }
 
-fn at_section_end(l: lexer.Lexer) -> Bool {
-  l.current == Some(token.NewLine)
-  && {
-    lexer.advance(l).current == Some(token.NewLine)
-    || lexer.advance(l).current == None
+fn get_paragraph_graphemes(input: Graphemes) -> #(Graphemes, Graphemes) {
+  do_get_paragraph_graphemes(input, [])
+}
+
+fn do_get_paragraph_graphemes(
+  input: Graphemes,
+  accum: Graphemes,
+) -> #(Graphemes, Graphemes) {
+  case input {
+    [] -> #([], list.reverse(accum))
+    [first] ->
+      case first {
+        "\n" -> #([], list.reverse(accum))
+        _ -> #([], list.reverse([first, ..accum]))
+      }
+    [first, next, ..rest] ->
+      case first, next {
+        "\n", "\n" -> #(rest, list.reverse(accum))
+        "\n", _ -> do_get_paragraph_graphemes([next, ..rest], [" ", ..accum])
+        _, _ -> do_get_paragraph_graphemes([next, ..rest], [first, ..accum])
+      }
   }
 }
