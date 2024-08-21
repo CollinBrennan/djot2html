@@ -3,7 +3,7 @@ import gleam/io
 import gleeunit/should
 import parser
 
-pub fn parser_test() {
+pub fn inline_test() {
   let tests =
     parser.Document([
       parser.Paragraph([
