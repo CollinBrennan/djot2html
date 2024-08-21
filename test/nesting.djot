@@ -1,0 +1,5 @@
+normal text _this *is ~properly~* nested_
+
+_this is *italic_ this is not*
+
+*what _about ~double* nesting?~_

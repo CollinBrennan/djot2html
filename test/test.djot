@@ -1,7 +1,8 @@
-_italic_ *bold* ~sub~ ^super^
+text_italic_*bold*~sub~^super^end
 
-_ita
-lic_ *bo
-ld* ~su
-b~ ^sup
-er^
+te
+xt_ita
+lic_*bo
+ld*~su
+b~^sup
+er^end

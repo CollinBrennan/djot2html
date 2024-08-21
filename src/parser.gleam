@@ -47,45 +47,48 @@ fn parse_block(input: Graphemes, grapheme: String) -> #(Graphemes, Block) {
 
 fn parse_paragraph(input: Graphemes) -> #(Graphemes, Block) {
   let #(rest, paragraph_graphemes) = get_paragraph_graphemes(input, "")
-  let inlines = parse_inner(paragraph_graphemes, [])
-  #(rest, Paragraph(inlines))
+  let inner = parse_inner(paragraph_graphemes, [])
+  #(rest, Paragraph(inner))
 }
 
 fn parse_inner(input: Graphemes, accum: List(Inline)) -> List(Inline) {
   case input {
     "" -> list.reverse(accum)
     _ -> {
-      let #(rest, inline) = parse_inline(input, "")
-      parse_inner(rest, [inline, ..accum])
+      let #(rest, inline, text) = parse_inline(input, "")
+      case text {
+        "" -> parse_inner(rest, [inline, ..accum])
+        _ -> parse_inner(rest, [inline, Text(text), ..accum])
+      }
     }
   }
 }
 
-fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline) {
+fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline, String) {
   case input {
     "_" <> rest ->
       case parse_style(rest, "", "_") {
         None -> parse_inline(rest, text <> "_")
-        Some(#(rest, inner)) -> #(rest, Emphasis(parse_inner(inner, [])))
+        Some(#(rest, inner)) -> #(rest, Emphasis(parse_inner(inner, [])), text)
       }
     "*" <> rest ->
       case parse_style(rest, "", "*") {
         None -> parse_inline(rest, text <> "*")
-        Some(#(rest, inner)) -> #(rest, Strong(parse_inner(inner, [])))
+        Some(#(rest, inner)) -> #(rest, Strong(parse_inner(inner, [])), text)
       }
     "~" <> rest ->
       case parse_style(rest, "", "~") {
         None -> parse_inline(rest, text <> "~")
-        Some(#(rest, inner)) -> #(rest, Sub(parse_inner(inner, [])))
+        Some(#(rest, inner)) -> #(rest, Sub(parse_inner(inner, [])), text)
       }
     "^" <> rest ->
       case parse_style(rest, "", "^") {
         None -> parse_inline(rest, text <> "^")
-        Some(#(rest, inner)) -> #(rest, Super(parse_inner(inner, [])))
+        Some(#(rest, inner)) -> #(rest, Super(parse_inner(inner, [])), text)
       }
     _ ->
       case string.pop_grapheme(input) {
-        Error(_) -> #("", Text(text))
+        Error(_) -> #("", Text(text), "")
         Ok(#(first, rest)) -> parse_inline(rest, text <> first)
       }
   }
