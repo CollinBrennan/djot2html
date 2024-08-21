@@ -25,13 +25,8 @@ pub type Graphemes =
 
 pub fn parse(input: String) -> Document {
   let input = string.replace(input, "\r\n", "\n") |> string.to_graphemes()
-  case input {
-    [] -> Document([])
-    _ -> {
-      let sections = do_parse(input, [])
-      Document(sections)
-    }
-  }
+  let sections = do_parse(input, [])
+  Document(sections)
 }
 
 fn do_parse(input: Graphemes, accum: List(Section)) -> List(Section) {
