@@ -21,18 +21,18 @@ pub type Inline {
 }
 
 pub type Graphemes =
-  List(String)
+  String
 
 pub fn parse(input: String) -> Document {
-  let input = string.replace(input, "\r\n", "\n") |> string.to_graphemes()
+  let input = string.replace(input, "\r\n", "\n")
   let blocks = do_parse(input, [])
   Document(blocks)
 }
 
 fn do_parse(input: Graphemes, accum: List(Block)) -> List(Block) {
-  case input {
-    [] -> list.reverse(accum)
-    [first, ..] -> {
+  case string.first(input) {
+    Error(_) -> list.reverse(accum)
+    Ok(first) -> {
       let #(rest, block) = parse_block(input, first)
       do_parse(rest, [block, ..accum])
     }
@@ -53,7 +53,7 @@ fn parse_paragraph(input: Graphemes) -> #(Graphemes, Block) {
 
 fn do_parse_paragraph(input: Graphemes, accum: List(Inline)) -> List(Inline) {
   case input {
-    [] -> list.reverse(accum)
+    "" -> list.reverse(accum)
     _ -> {
       let #(rest, inline) = parse_inline(input, "")
       do_parse_paragraph(rest, [inline, ..accum])
@@ -63,39 +63,30 @@ fn do_parse_paragraph(input: Graphemes, accum: List(Inline)) -> List(Inline) {
 
 fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline) {
   case input {
-    [] -> #([], Text(text))
-    [first, ..rest] ->
-      case first {
-        "_" ->
-          case parse_style(rest, [], "_") {
-            None -> parse_inline(rest, text <> "_")
-            Some(#(rest, inner)) -> #(
-              rest,
-              Emphasis(do_parse_paragraph(inner, [])),
-            )
-          }
-        "*" ->
-          case parse_style(rest, [], "*") {
-            None -> parse_inline(rest, text <> "*")
-            Some(#(rest, inner)) -> #(
-              rest,
-              Strong(do_parse_paragraph(inner, [])),
-            )
-          }
-        "~" ->
-          case parse_style(rest, [], "~") {
-            None -> parse_inline(rest, text <> "~")
-            Some(#(rest, inner)) -> #(rest, Sub(do_parse_paragraph(inner, [])))
-          }
-        "^" ->
-          case parse_style(rest, [], "^") {
-            None -> parse_inline(rest, text <> "^")
-            Some(#(rest, inner)) -> #(
-              rest,
-              Super(do_parse_paragraph(inner, [])),
-            )
-          }
-        _ -> parse_inline(rest, text <> first)
+    "_" <> rest ->
+      case parse_style(rest, "", "_") {
+        None -> parse_inline(rest, text <> "_")
+        Some(#(rest, inner)) -> #(rest, Emphasis(do_parse_paragraph(inner, [])))
+      }
+    "*" <> rest ->
+      case parse_style(rest, "", "*") {
+        None -> parse_inline(rest, text <> "*")
+        Some(#(rest, inner)) -> #(rest, Strong(do_parse_paragraph(inner, [])))
+      }
+    "~" <> rest ->
+      case parse_style(rest, "", "~") {
+        None -> parse_inline(rest, text <> "~")
+        Some(#(rest, inner)) -> #(rest, Sub(do_parse_paragraph(inner, [])))
+      }
+    "^" <> rest ->
+      case parse_style(rest, "", "^") {
+        None -> parse_inline(rest, text <> "^")
+        Some(#(rest, inner)) -> #(rest, Super(do_parse_paragraph(inner, [])))
+      }
+    _ ->
+      case string.pop_grapheme(input) {
+        Error(_) -> #("", Text(text))
+        Ok(#(first, rest)) -> parse_inline(rest, text <> first)
       }
   }
 }
@@ -105,18 +96,18 @@ fn parse_style(
   accum: Graphemes,
   terminator: String,
 ) -> Option(#(Graphemes, Graphemes)) {
-  case input {
-    [] -> None
-    [first, ..rest] ->
+  case string.pop_grapheme(input) {
+    Error(_) -> None
+    Ok(#(first, rest)) ->
       case first {
-        _ if first == terminator -> Some(#(rest, list.reverse(accum)))
-        _ -> parse_style(rest, [first, ..accum], terminator)
+        _ if first == terminator -> Some(#(rest, string.reverse(accum)))
+        _ -> parse_style(rest, first <> accum, terminator)
       }
   }
 }
 
 fn get_paragraph_graphemes(input: Graphemes) -> #(Graphemes, Graphemes) {
-  do_get_paragraph_graphemes(input, [])
+  do_get_paragraph_graphemes(input, "")
 }
 
 fn do_get_paragraph_graphemes(
@@ -124,17 +115,13 @@ fn do_get_paragraph_graphemes(
   accum: Graphemes,
 ) -> #(Graphemes, Graphemes) {
   case input {
-    [] -> #([], list.reverse(accum))
-    [first] ->
-      case first {
-        "\n" -> #([], list.reverse(accum))
-        _ -> #([], list.reverse([first, ..accum]))
-      }
-    [first, next, ..rest] ->
-      case first, next {
-        "\n", "\n" -> #(rest, list.reverse(accum))
-        "\n", _ -> do_get_paragraph_graphemes([next, ..rest], [" ", ..accum])
-        _, _ -> do_get_paragraph_graphemes([next, ..rest], [first, ..accum])
+    "\n" -> #("", accum)
+    "\n\n" <> rest -> #(rest, accum)
+    "\n" <> rest -> do_get_paragraph_graphemes(rest, accum <> " ")
+    _ ->
+      case string.pop_grapheme(input) {
+        Error(_) -> #("", accum)
+        Ok(#(first, rest)) -> do_get_paragraph_graphemes(rest, accum <> first)
       }
   }
 }
