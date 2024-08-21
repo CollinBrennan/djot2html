@@ -67,22 +67,22 @@ fn parse_inner(input: Graphemes, accum: List(Inline)) -> List(Inline) {
 fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline, String) {
   case input {
     "_" <> rest ->
-      case parse_style(rest, "", "_") {
+      case parse_style(rest, "_") {
         None -> parse_inline(rest, text <> "_")
         Some(#(rest, inner)) -> #(rest, Emphasis(parse_inner(inner, [])), text)
       }
     "*" <> rest ->
-      case parse_style(rest, "", "*") {
+      case parse_style(rest, "*") {
         None -> parse_inline(rest, text <> "*")
         Some(#(rest, inner)) -> #(rest, Strong(parse_inner(inner, [])), text)
       }
     "~" <> rest ->
-      case parse_style(rest, "", "~") {
+      case parse_style(rest, "~") {
         None -> parse_inline(rest, text <> "~")
         Some(#(rest, inner)) -> #(rest, Sub(parse_inner(inner, [])), text)
       }
     "^" <> rest ->
-      case parse_style(rest, "", "^") {
+      case parse_style(rest, "^") {
         None -> parse_inline(rest, text <> "^")
         Some(#(rest, inner)) -> #(rest, Super(parse_inner(inner, [])), text)
       }
@@ -96,18 +96,50 @@ fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline, String) 
 
 fn parse_style(
   input: Graphemes,
-  accum: Graphemes,
   terminator: String,
 ) -> Option(#(Graphemes, Graphemes)) {
-  case string.pop_grapheme(input) {
-    Error(_) -> None
-    Ok(#(first, rest)) ->
-      case first {
-        _ if first == terminator -> Some(#(rest, string.reverse(accum)))
-        _ -> parse_style(rest, first <> accum, terminator)
+  let graphemes = string.to_graphemes(input)
+  case graphemes {
+    [] -> None
+    [first, ..] if first == terminator || first == " " -> None
+    _ ->
+      case do_parse_style(string.to_graphemes(input), terminator, "") {
+        None -> None
+        Some(#(rest, inner)) -> Some(#(string.join(rest, ""), inner))
       }
   }
 }
+
+fn do_parse_style(
+  input: List(String),
+  terminator: String,
+  accum: Graphemes,
+) -> Option(#(List(String), Graphemes)) {
+  case input {
+    [] -> None
+    [" ", next, ..] if next == terminator -> None
+    [first, ..rest] ->
+      case first {
+        _ if first == terminator -> Some(#(rest, accum))
+        _ -> do_parse_style(rest, terminator, accum <> first)
+      }
+  }
+}
+
+// fn parse_bracket_style(
+//   input: Graphemes,
+//   accum: Graphemes,
+//   terminator: String,
+// ) -> Option(#(Graphemes, Graphemes)) {
+//   case string.pop_grapheme(input) {
+//     Error(_) -> None
+//     Ok(#(first, rest)) ->
+//       case first {
+//         _ if first == terminator -> Some(#(rest, accum))
+//         _ -> parse_style(rest, accum <> first, terminator)
+//       }
+//   }
+// }
 
 fn get_paragraph_graphemes(
   input: Graphemes,

@@ -24,7 +24,7 @@ pub fn inline_test() {
       ]),
     ])
 
-  case file.read("./test/test.djot") {
+  case file.read("./test/inline.djot") {
     Ok(input) -> {
       parser.parse(input)
       |> should.equal(tests)
@@ -76,6 +76,35 @@ pub fn nesting_test() {
     ])
 
   case file.read("./test/nesting.djot") {
+    Ok(input) -> {
+      parser.parse(input)
+      |> should.equal(tests)
+    }
+    Error(error) -> io.println_error(error)
+  }
+}
+
+pub fn whitespace_test() {
+  let tests =
+    parser.Document([
+      parser.Paragraph([parser.Emphasis([parser.Text("text1")])]),
+      parser.Paragraph([parser.Text("__")]),
+      parser.Paragraph([
+        parser.Text("_"),
+        parser.Emphasis([parser.Text("text3")]),
+      ]),
+      parser.Paragraph([
+        parser.Emphasis([parser.Text("text4")]),
+        parser.Text("_"),
+      ]),
+      parser.Paragraph([parser.Text("_ text5_")]),
+      parser.Paragraph([parser.Text("_text6 _")]),
+      parser.Paragraph([parser.Text("_ _")]),
+      parser.Paragraph([parser.Text("_ text8_")]),
+      parser.Paragraph([parser.Text("_text9 _")]),
+    ])
+
+  case file.read("./test/whitespace.djot") {
     Ok(input) -> {
       parser.parse(input)
       |> should.equal(tests)
