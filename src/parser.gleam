@@ -46,7 +46,7 @@ fn parse_block(input: Graphemes, grapheme: String) -> #(Graphemes, Block) {
 }
 
 fn parse_paragraph(input: Graphemes) -> #(Graphemes, Block) {
-  let #(rest, paragraph_graphemes) = get_paragraph_graphemes(input, "")
+  let #(rest, paragraph_graphemes) = get_block_graphemes(input, "")
   let inner = parse_inner(paragraph_graphemes, [])
   #(rest, Paragraph(inner))
 }
@@ -103,7 +103,7 @@ fn parse_style(
     [] -> None
     [first, ..] if first == terminator || first == " " -> None
     _ ->
-      case do_parse_style(string.to_graphemes(input), terminator, "") {
+      case do_parse_style(graphemes, terminator, "") {
         None -> None
         Some(#(rest, inner)) -> Some(#(string.join(rest, ""), inner))
       }
@@ -141,18 +141,18 @@ fn do_parse_style(
 //   }
 // }
 
-fn get_paragraph_graphemes(
+fn get_block_graphemes(
   input: Graphemes,
   accum: Graphemes,
 ) -> #(Graphemes, Graphemes) {
   case input {
     "\n" -> #("", accum)
     "\n\n" <> rest -> #(rest, accum)
-    "\n" <> rest -> get_paragraph_graphemes(rest, accum <> " ")
+    "\n" <> rest -> get_block_graphemes(rest, accum <> " ")
     _ ->
       case string.pop_grapheme(input) {
         Error(_) -> #("", accum)
-        Ok(#(first, rest)) -> get_paragraph_graphemes(rest, accum <> first)
+        Ok(#(first, rest)) -> get_block_graphemes(rest, accum <> first)
       }
   }
 }
