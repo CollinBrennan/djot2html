@@ -116,6 +116,15 @@ pub fn whitespace_test() {
 pub fn brace_inline_test() {
   let tests =
     parser.Document([
+      parser.Paragraph([
+        parser.Emphasis([parser.Text("emphasis")]),
+        parser.Strong([parser.Text("strong")]),
+        parser.Sub([parser.Text("sub")]),
+        parser.Super([parser.Text("super")]),
+        parser.Mark([parser.Text("mark")]),
+        parser.Insert([parser.Text("insert")]),
+        parser.Delete([parser.Text("delete")]),
+      ]),
       parser.Paragraph([parser.Emphasis([parser.Text("text1")])]),
       parser.Paragraph([parser.Emphasis([parser.Text(" text2 ")])]),
       parser.Paragraph([parser.Emphasis([parser.Text(" text3")])]),

@@ -19,6 +19,9 @@ pub type Inline {
   Code(List(Inline))
   Sub(List(Inline))
   Super(List(Inline))
+  Mark(List(Inline))
+  Insert(List(Inline))
+  Delete(List(Inline))
 }
 
 pub type Graphemes =
@@ -76,6 +79,36 @@ fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline, String) 
       case parse_brace_style(rest, "", "_}") {
         None -> parse_inline(rest, text <> "{_")
         Some(#(rest, inner)) -> #(rest, Emphasis(parse_inner(inner, [])), text)
+      }
+    "{*" <> rest ->
+      case parse_brace_style(rest, "", "*}") {
+        None -> parse_inline(rest, text <> "{*")
+        Some(#(rest, inner)) -> #(rest, Strong(parse_inner(inner, [])), text)
+      }
+    "{~" <> rest ->
+      case parse_brace_style(rest, "", "~}") {
+        None -> parse_inline(rest, text <> "{~")
+        Some(#(rest, inner)) -> #(rest, Sub(parse_inner(inner, [])), text)
+      }
+    "{^" <> rest ->
+      case parse_brace_style(rest, "", "^}") {
+        None -> parse_inline(rest, text <> "{^")
+        Some(#(rest, inner)) -> #(rest, Super(parse_inner(inner, [])), text)
+      }
+    "{=" <> rest ->
+      case parse_brace_style(rest, "", "=}") {
+        None -> parse_inline(rest, text <> "{=")
+        Some(#(rest, inner)) -> #(rest, Mark(parse_inner(inner, [])), text)
+      }
+    "{+" <> rest ->
+      case parse_brace_style(rest, "", "+}") {
+        None -> parse_inline(rest, text <> "{+")
+        Some(#(rest, inner)) -> #(rest, Insert(parse_inner(inner, [])), text)
+      }
+    "{-" <> rest ->
+      case parse_brace_style(rest, "", "-}") {
+        None -> parse_inline(rest, text <> "{-")
+        Some(#(rest, inner)) -> #(rest, Delete(parse_inner(inner, [])), text)
       }
     "_" <> rest ->
       case parse_style(rest, "_") {
