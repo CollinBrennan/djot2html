@@ -112,3 +112,28 @@ pub fn whitespace_test() {
     Error(error) -> io.println_error(error)
   }
 }
+
+pub fn brace_inline_test() {
+  let tests =
+    parser.Document([
+      parser.Paragraph([parser.Emphasis([parser.Text("text1")])]),
+      parser.Paragraph([parser.Emphasis([parser.Text(" text2 ")])]),
+      parser.Paragraph([parser.Emphasis([parser.Text(" text3")])]),
+      parser.Paragraph([parser.Emphasis([parser.Text("te xt4")])]),
+      parser.Paragraph([
+        parser.Emphasis([parser.Emphasis([parser.Text("text5")])]),
+      ]),
+      parser.Paragraph([
+        parser.Emphasis([parser.Text("this*is text6")]),
+        parser.Text("*"),
+      ]),
+    ])
+
+  case file.read("./test/brace_inline.djot") {
+    Ok(input) -> {
+      parser.parse(input)
+      |> should.equal(tests)
+    }
+    Error(error) -> io.println_error(error)
+  }
+}

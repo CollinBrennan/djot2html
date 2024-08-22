@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -71,6 +72,11 @@ fn parse_inner(input: Graphemes, accum: List(Inline)) -> List(Inline) {
 
 fn parse_inline(input: Graphemes, text: String) -> #(Graphemes, Inline, String) {
   case input {
+    "{_" <> rest ->
+      case parse_brace_style(rest, "", "_}") {
+        None -> parse_inline(rest, text <> "{_")
+        Some(#(rest, inner)) -> #(rest, Emphasis(parse_inner(inner, [])), text)
+      }
     "_" <> rest ->
       case parse_style(rest, "_") {
         None -> parse_inline(rest, text <> "_")
@@ -131,20 +137,25 @@ fn do_parse_style(
   }
 }
 
-// fn parse_bracket_style(
-//   input: Graphemes,
-//   accum: Graphemes,
-//   terminator: String,
-// ) -> Option(#(Graphemes, Graphemes)) {
-//   case string.pop_grapheme(input) {
-//     Error(_) -> None
-//     Ok(#(first, rest)) ->
-//       case first {
-//         _ if first == terminator -> Some(#(rest, accum))
-//         _ -> parse_style(rest, accum <> first, terminator)
-//       }
-//   }
-// }
+fn parse_brace_style(
+  input: Graphemes,
+  accum: Graphemes,
+  terminator: String,
+) -> Option(#(Graphemes, Graphemes)) {
+  case string.pop_grapheme(input) {
+    Error(_) -> None
+    Ok(#(first, rest)) ->
+      case string.starts_with(input, terminator) {
+        True -> {
+          let rest = string.drop_left(input, string.length(terminator))
+          Some(#(rest, accum))
+        }
+        False -> {
+          parse_brace_style(rest, accum <> first, terminator)
+        }
+      }
+  }
+}
 
 fn get_paragraph_graphemes(
   input: Graphemes,
