@@ -30,23 +30,28 @@ pub fn parse(input: String) -> Document {
 }
 
 fn do_parse(input: Graphemes, accum: List(Block)) -> List(Block) {
-  case string.first(input) {
-    Error(_) -> list.reverse(accum)
-    Ok(first) -> {
-      let #(rest, block) = parse_block(input, first)
+  case input {
+    "" -> list.reverse(accum)
+    _ -> {
+      let #(rest, block) = parse_block(input)
       do_parse(rest, [block, ..accum])
     }
   }
 }
 
-fn parse_block(input: Graphemes, grapheme: String) -> #(Graphemes, Block) {
-  case grapheme {
+fn parse_block(input: Graphemes) -> #(Graphemes, Block) {
+  case input {
+    "#" <> _ -> parse_header(input)
     _ -> parse_paragraph(input)
   }
 }
 
+fn parse_header(input: Graphemes) {
+  todo
+}
+
 fn parse_paragraph(input: Graphemes) -> #(Graphemes, Block) {
-  let #(rest, paragraph_graphemes) = get_block_graphemes(input, "")
+  let #(rest, paragraph_graphemes) = get_paragraph_graphemes(input, "")
   let inner = parse_inner(paragraph_graphemes, [])
   #(rest, Paragraph(inner))
 }
@@ -141,18 +146,18 @@ fn do_parse_style(
 //   }
 // }
 
-fn get_block_graphemes(
+fn get_paragraph_graphemes(
   input: Graphemes,
   accum: Graphemes,
 ) -> #(Graphemes, Graphemes) {
   case input {
     "\n" -> #("", accum)
     "\n\n" <> rest -> #(rest, accum)
-    "\n" <> rest -> get_block_graphemes(rest, accum <> " ")
+    "\n" <> rest -> get_paragraph_graphemes(rest, accum <> " ")
     _ ->
       case string.pop_grapheme(input) {
         Error(_) -> #("", accum)
-        Ok(#(first, rest)) -> get_block_graphemes(rest, accum <> first)
+        Ok(#(first, rest)) -> get_paragraph_graphemes(rest, accum <> first)
       }
   }
 }
