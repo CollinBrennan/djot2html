@@ -181,7 +181,10 @@ fn parse_brace_style(
       case string.starts_with(input, terminator) {
         True -> {
           let rest = string.drop_left(input, string.length(terminator))
-          Some(#(rest, accum))
+          case accum {
+            "" -> None
+            _ -> Some(#(rest, accum))
+          }
         }
         False -> {
           parse_brace_style(rest, accum <> first, terminator)

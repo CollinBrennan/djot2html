@@ -136,6 +136,8 @@ pub fn brace_inline_test() {
         parser.Emphasis([parser.Text("this*is text6")]),
         parser.Text("*"),
       ]),
+      parser.Paragraph([parser.Emphasis([parser.Text(" ")])]),
+      parser.Paragraph([parser.Text("{__}")]),
     ])
 
   case file.read("./test/brace_inline.djot") {
